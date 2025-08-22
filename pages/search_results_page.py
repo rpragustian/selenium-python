@@ -6,7 +6,7 @@ This class represents the page that appears after performing a search.
 
 from selenium.webdriver.common.by import By
 from .base_page import BasePage
-from .locators import SearchResultsPageLocators
+from locators.search_results_locators import SearchResultsPageLocators
 
 
 class SearchResultsPage(BasePage):
