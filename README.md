@@ -15,6 +15,10 @@ The Page Objects pattern is a design pattern that:
 
 ```
 selenium-python/
+├── api-automation/                    # 🆕 API Testing Package
+│   └── tests/                        # API test files
+│       ├── test_calculator.py        # Calculator function tests
+│       └── test_reqres_api.py        # ReqRes API integration tests
 ├── locators/                          # 🆕 Dedicated locators package
 │   ├── __init__.py                   # Package initialization
 │   ├── landing_page_locators.py      # Landing page element locators
@@ -25,10 +29,14 @@ selenium-python/
 │   ├── base_page.py                  # Base page class with common functionality
 │   ├── landing_page.py               # Landing page object (methods only)
 │   └── search_results_page.py        # Search results page object (methods only)
+├── src/                              # 🆕 Source code package
+│   ├── calculator.py                 # Calculator functions for testing
+│   └── api_utils.py                  # API testing utilities and client
 ├── test_with_page_objects.py         # Basic Page Objects test
 ├── test_page_objects_workflow.py     # Comprehensive workflow test
 ├── test_new_structure.py             # 🆕 New structure validation test
 ├── first_test.py                     # Original test (without Page Objects)
+├── requirements.txt                   # 🆕 Python dependencies
 └── README.md                         # This comprehensive guide
 ```
 
@@ -339,6 +347,247 @@ class LandingPageLocators:
     COOKIE_BANNER = (By.CLASS_NAME, "cookie-banner")
 ```
 
+## 🆕 **API Automation Testing**
+
+This project now includes comprehensive API testing capabilities alongside the existing Selenium WebDriver tests.
+
+### **API Testing Features**
+
+- **REST API Testing**: Full CRUD operations testing
+- **JSON Schema Validation**: Automatic response structure validation
+- **Performance Testing**: Response time and concurrent request testing
+- **Data Integrity**: Comprehensive data validation and consistency checks
+- **Error Handling**: Proper error response validation
+- **Authentication**: API key-based authentication support
+
+### **API Testing Structure**
+
+#### **`src/api_utils.py`**
+The core API testing utilities providing:
+
+- **APIClient**: HTTP client with authentication and session management
+- **APIResponse**: Response wrapper with assertion methods
+- **Schema Validation**: JSON schema validation utilities
+- **User Schema Validation**: Specific validation for user data structures
+
+```python
+from src.api_utils import APIClient, validate_user_schema
+
+# Create API client
+api_client = APIClient("https://reqres.in")
+
+# Make requests
+response = api_client.get("/api/users", params={"page": 2})
+
+# Assertions
+response.assert_status_code(200)
+response.assert_contains_key("data")
+response.assert_response_time(5000)  # 5 seconds max
+```
+
+#### **`api-automation/tests/test_calculator.py`**
+Unit tests for calculator functions:
+
+- **Basic Operations**: Addition, subtraction, multiplication, division
+- **Edge Cases**: Division by zero, negative numbers
+- **Floating Point**: Precision testing with pytest.approx
+- **Square Function**: Testing mathematical operations
+
+```python
+def test_add_floats():
+    """Test addition with floating point numbers."""
+    assert add(2.5, 3.5) == 6.0
+    assert add(0.1, 0.2) == pytest.approx(0.3, rel=1e-9)
+```
+
+#### **`api-automation/tests/test_reqres_api.py`**
+Comprehensive API integration tests:
+
+- **User Management**: CRUD operations for users
+- **Pagination**: Page-based user listing
+- **Data Validation**: Schema and data integrity checks
+- **Performance**: Response time and concurrent request testing
+- **Error Handling**: Invalid requests and edge cases
+
+### **API Testing Capabilities**
+
+#### **1. HTTP Methods Support**
+```python
+# GET requests
+response = api_client.get("/api/users", params={"page": 2})
+
+# POST requests
+response = api_client.post("/api/users", data={"name": "John", "job": "Engineer"})
+
+# PUT requests
+response = api_client.put("/api/users/1", data={"name": "Jane", "job": "Manager"})
+
+# DELETE requests
+response = api_client.delete("/api/users/1")
+```
+
+#### **2. Response Assertions**
+```python
+# Status code assertions
+response.assert_status_code(200)
+
+# Key presence assertions
+response.assert_contains_key("data")
+
+# Value assertions
+response.assert_key_value("page", 2)
+
+# Response time assertions
+response.assert_response_time(3000)  # 3 seconds max
+
+# JSON schema validation
+response.assert_json_schema(expected_schema)
+```
+
+#### **3. Data Validation**
+```python
+# User schema validation
+for user in response.json["data"]:
+    assert validate_user_schema(user), f"Invalid user schema: {user}"
+
+# Data integrity checks
+user_ids = [user["id"] for user in data]
+assert len(user_ids) == len(set(user_ids)), "User IDs should be unique"
+```
+
+#### **4. Performance Testing**
+```python
+# Concurrent request testing
+with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+    futures = [executor.submit(make_request) for _ in range(5)]
+    results = [future.result() for future in futures]
+
+# Response time consistency
+response_times = []
+for _ in range(3):
+    response = api_client.get("/api/users", params={"page": 1})
+    response_time = response.response.elapsed.total_seconds()
+    response_times.append(response_time)
+```
+
+### **Running API Tests**
+
+#### **Prerequisites**
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Required packages:
+# - pytest>=7.0.0
+# - pytest-cov>=4.0.0
+# - pytest-html>=3.0.0
+# - pytest-xdist>=3.0.0
+# - requests>=2.31.0
+# - jsonschema>=4.19.0
+```
+
+#### **Running Tests**
+```bash
+# Run calculator tests
+python -m pytest api-automation/tests/test_calculator.py -v
+
+# Run API integration tests
+python -m pytest api-automation/tests/test_reqres_api.py -v
+
+# Run all API tests
+python -m pytest api-automation/tests/ -v
+
+# Run with coverage
+python -m pytest api-automation/tests/ --cov=src
+
+# Run with HTML report
+python -m pytest api-automation/tests/ --html=api_report.html
+```
+
+### **API Testing Best Practices**
+
+#### **1. Test Organization**
+```python
+class TestReqResAPI:
+    """Test class for ReqRes API endpoints."""
+    
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        """Setup API client for each test."""
+        self.api_client = APIClient("https://reqres.in")
+```
+
+#### **2. Comprehensive Assertions**
+```python
+def test_get_users_page_2(self):
+    """Test GET /api/users?page=2 endpoint."""
+    response = self.api_client.get("/api/users", params={"page": 2})
+    
+    # Multiple assertion types
+    response.assert_status_code(200)
+    response.assert_response_time(5000)
+    response.assert_contains_key("data")
+    response.assert_key_value("page", 2)
+```
+
+#### **3. Data Validation**
+```python
+# Validate response structure
+response.assert_json_schema(users_schema)
+
+# Validate individual items
+for user in response.json["data"]:
+    assert validate_user_schema(user)
+```
+
+#### **4. Performance Considerations**
+```python
+# Set reasonable timeouts
+response.assert_response_time(3000)  # 3 seconds max
+
+# Test concurrent requests
+# Test response time consistency
+# Test under load conditions
+```
+
+### **Extending API Testing**
+
+#### **Adding New API Endpoints**
+```python
+def test_new_endpoint(self):
+    """Test a new API endpoint."""
+    response = self.api_client.get("/api/new-endpoint")
+    
+    response.assert_status_code(200)
+    response.assert_contains_key("expected_key")
+    
+    # Add specific business logic validation
+    data = response.json["data"]
+    assert len(data) > 0, "Should return data"
+```
+
+#### **Adding New Validation Schemas**
+```python
+def validate_product_schema(response_data: Dict[str, Any]):
+    """Validate product data structure."""
+    product_schema = {
+        "type": "object",
+        "properties": {
+            "id": {"type": "integer"},
+            "name": {"type": "string"},
+            "price": {"type": "number"},
+            "category": {"type": "string"}
+        },
+        "required": ["id", "name", "price", "category"]
+    }
+    
+    try:
+        validate(instance=response_data, schema=product_schema)
+        return True
+    except ValidationError:
+        return False
+```
+
 ## 🔍 **Common Locator Strategies**
 
 ### **1. ID (Most reliable)**
@@ -365,5 +614,30 @@ RESULT_ITEM = (By.CLASS_NAME, "result-item")
 ```python
 HOME_LINK = (By.LINK_TEXT, "Home")
 ```
+
+## 🚀 **Running All Tests**
+
+### **Complete Test Suite**
+```bash
+# Activate virtual environment
+source venv/bin/activate
+
+# Run Selenium tests
+python test_with_page_objects.py
+python test_page_objects_workflow.py
+python test_new_structure.py
+
+# Run API tests
+python -m pytest api-automation/tests/ -v
+
+# Run with coverage
+python -m pytest api-automation/tests/ --cov=src --cov-report=html
+```
+
+### **Test Reports**
+- **Console Output**: Detailed test results with pytest
+- **HTML Reports**: `pytest --html=report.html`
+- **Coverage Reports**: `pytest --cov=src --cov-report=html`
+- **Parallel Execution**: `pytest -n auto` for faster execution
 
 **Happy testing! 🚀**
